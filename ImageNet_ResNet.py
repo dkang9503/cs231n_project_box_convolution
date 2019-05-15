@@ -9,40 +9,50 @@ import torchvision
 import numpy as np
 import torchvision.transforms as transforms
 import torchvision.models as models
+import matplotlib.pyplot as plt
 import pickle
 import visdom
 import time
+import random
+from tiny_imagenet_loader import data_loader
 
 def main():
     
-    train_set = torchvision.datasets.ImageFolder(
-            root = './data/ImageNet/tiny-imagenet-200/train',
-            transform = transforms.Compose([transforms.ToTensor()])
-    )
+    train_set, val_set = data_loader(rootdir = './data/ImageNet/tiny-imagenet-200/', normalized =True)
     
-    val_set = torchvision.datasets.ImageFolder(
-            root = './data/ImageNet/tiny-imagenet-200/val',
-            transform = transforms.Compose([transforms.ToTensor()])
-    )
+    #train_loader = torch.utils.data.DataLoader(train_set, batch_size = 128, shuffle = True)
+    #val_loader = torch.utils.data.DataLoader(val_set, batch_size = 128)
     
-    test_set = torchvision.datasets.ImageFolder(
-            root = './data/ImageNet/tiny-imagenet-200/test',
-            transform = transforms.Compose([transforms.ToTensor()])
-    )
+    '''
+    #Calculating mean/sd of the pixel channels
+    mean_pixel = []
+    sd_pixel = []
+    for data,_ in train_loader:
+        mean_pixel.append(np.mean(data.numpy(), axis = (0, 2, 3)))
+        sd_pixel.append(np.sqrt(np.var(data.numpy(), axis = (0, 2, 3))))
+    '''
     
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size = 128)
-    val_loader = torch.utils.data.DataLoader(val_set, batch_size = 128)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size = 128)
+    ####Subset of data#####
+    #choice of random index
+    
+    rand_idx = random.choices(range(100000), k = 320)
+    rand_idx2 = random.choices(range(10000), k = 320)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size = 32, 
+                                               sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx))
+    val_loader = torch.utils.data.DataLoader(val_set, batch_size = 32, 
+                                               sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx2))
+    
+    #######################
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     res_net = models.resnet50(num_classes = 200)
     res_net.to(device)
     loss_fcn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(res_net.parameters(), lr = .0001, weight_decay = .01)
+    optimizer = torch.optim.Adam(res_net.parameters(), lr = 1, weight_decay = 0)
     
     epochs = 50
-    print_every = 100
+    print_every = 1
     
     train_loss = []
     valid_loss = []
@@ -72,19 +82,29 @@ def main():
                                xlabels = 'Epochs',
                                ylabels = 'Time'))
     
+    #####debugging#######
+    train_plot = viz.line(Y = torch.tensor([0]).zero_(), opts = dict(title = 'Training Loss Tracker',
+                               xlabels = 'Iteration',
+                               ylabels = 'Time'))
+    
+    #####################
+    
     epoch_time = []
     for e in range(epochs):
+        print('Epoch ', e)
         epoch_start = time.time()
         #Training
         num_correct = 0
         num_samples = 0
-        res_net.train()
+        
         iter_train_loss = []
         iter_train_acc = []
 
         #Training
         for t, (x,y) in enumerate(train_loader):
-            
+            num_correct = 0
+            num_samples = 0
+            res_net.train()
             x = x.to(device = device)
             y = y.to(device = device)
             
@@ -101,9 +121,11 @@ def main():
             num_samples += preds.size(0)
             
             iter_train_acc.append(float(num_correct)/num_samples)            
+            viz_tracker(train_plot, torch.tensor([iter_train_loss[t]]), torch.tensor([t]))
             
-            if t % print_every == 0:
-                print('Iteration %d, loss = %.3f' % (t, loss.item()))    
+            if (t % print_every) == 0:
+                print('Training: Iteration %d, loss = %.3f' % (t, loss.item()))    
+                print('Training: Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100*float(num_correct)/num_samples))
         
         train_loss.append(np.mean(iter_train_loss))
         train_acc.append(np.mean(iter_train_acc))
@@ -132,7 +154,7 @@ def main():
                 
             valid_loss.append(np.mean(iter_valid_loss))
             valid_acc.append(np.mean(iter_valid_acc))
-            print('Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100*float(num_correct)/num_samples))
+            print('Validation: Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100*float(num_correct)/num_samples))
     
         #Epoch time
         epoch_end = time.time()
