@@ -11,46 +11,37 @@ import torchvision.transforms as transforms
 import pickle
 import visdom
 import time
-import random
-from tiny_imagenet_loader import data_loader
 from models.HalfBoxResNet import resnetHalfBox
 
 def main():
     
-    train_set, val_set = data_loader(rootdir = './data/ImageNet/tiny-imagenet-200/', normalized =True)
+    train_set = torchvision.datasets.ImageFolder(
+            root = './data/ImageNet/tiny-imagenet-200/train',
+            transform = transforms.Compose([transforms.ToTensor()])
+    )
+    
+    val_set = torchvision.datasets.ImageFolder(
+            root = './data/ImageNet/tiny-imagenet-200/val',
+            transform = transforms.Compose([transforms.ToTensor()])
+    )
+    
+    test_set = torchvision.datasets.ImageFolder(
+            root = './data/ImageNet/tiny-imagenet-200/test',
+            transform = transforms.Compose([transforms.ToTensor()])
+    )
     
     train_loader = torch.utils.data.DataLoader(train_set, batch_size = 128, shuffle = True)
-    val_loader = torch.utils.data.DataLoader(val_set, batch_size = 128)
-    
-    '''
-    #Calculating mean/sd of the pixel channels
-    mean_pixel = []
-    sd_pixel = []
-    for data,_ in train_loader:
-        mean_pixel.append(np.mean(data.numpy(), axis = (0, 2, 3)))
-        sd_pixel.append(np.sqrt(np.var(data.numpy(), axis = (0, 2, 3))))
-    '''
-    
-    ####Subset of data#####
-    #choice of random index
-    '''
-    rand_idx = random.choices(range(100000), k = 192)
-    rand_idx2 = random.choices(range(10000), k = 320)
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size = 32, 
-                                               sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx))
-    val_loader = torch.utils.data.DataLoader(val_set, batch_size = 32, 
-                                               sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx2))
-    '''
-    #######################
+    val_loader = torch.utils.data.DataLoader(val_set, batch_size = 128, shuffle = True)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size = 128)
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
     res_net = resnetHalfBox(num_classes = 200)
     res_net.to(device)
     loss_fcn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(res_net.parameters(), lr = 3e-4, weight_decay = 0)
+    optimizer = torch.optim.Adam(res_net.parameters(), weight_decay = 1)
     
-    epochs = 100
+    epochs = 50
     print_every = 100
     
     train_loss = []
@@ -81,26 +72,18 @@ def main():
                                xlabels = 'Epochs',
                                ylabels = 'Time'))
     
-    
-    
     epoch_time = []
-    for e in range(epochs):        
-        #####debugging#######
-        train_plot = viz.line(Y = torch.tensor([0]).zero_(), opts = dict(title = 'Training Loss Tracker',
-                                   xlabels = 'Iteration',
-                                   ylabels = 'Time'))
-    
-        #####################
-        
+    for e in range(epochs):
         epoch_start = time.time()
         #Training
+        num_correct = 0
+        num_samples = 0
         res_net.train()
         iter_train_loss = []
         iter_train_acc = []
 
         for t, (x,y) in enumerate(train_loader):
-            num_correct = 0
-            num_samples = 0
+            
             x = x.to(device = device)
             y = y.to(device = device)
             
@@ -116,12 +99,10 @@ def main():
             num_correct += (preds == y).sum()
             num_samples += preds.size(0)
             
-            iter_train_acc.append(float(num_correct)/num_samples)  
-            viz_tracker(train_plot, torch.tensor([iter_train_loss[t]]), torch.tensor([t]))
+            iter_train_acc.append(float(num_correct)/num_samples)            
             
             if t % print_every == 0:
                 print('Iteration %d, loss = %.3f' % (t, loss.item()))    
-                print('Training: Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100*float(num_correct)/num_samples))
         
         train_loss.append(np.mean(iter_train_loss))
         train_acc.append(np.mean(iter_train_acc))
@@ -160,7 +141,7 @@ def main():
         viz_tracker(epoch_time_plot, torch.tensor([epoch_time[e]]), torch.tensor([e]) )
         viz_tracker(loss_plot, torch.tensor([[train_loss[e], valid_loss[e]]]), torch.tensor([[e,e]]))
         viz_tracker(acc_plot, torch.tensor([[train_acc[e], valid_acc[e]]]), torch.tensor([[e,e]]))
-        viz.close(win = train_plot)
+        
         #Save resulting arrays so far every 10 or so epochs
         if((e+1) % 10 == 0):
             with open('train_loss.pkl', 'wb') as handle:
@@ -173,6 +154,27 @@ def main():
                 pickle.dump(valid_acc, handle, protocol = pickle.HIGHEST_PROTOCOL)
             with open('epoch_time.pkl', 'wb') as handle:
                 pickle.dump(epoch_time, handle, protocol = pickle.HIGHEST_PROTOCOL)
+        
+    #calculate test loss
+    num_correct = 0
+    num_samples = 0
+    res_net.eval()
+    for x, y in test_loader:
+        x = x.to(device = device)
+        y = y.to(device = device)
+        
+        scores = res_net(x)
+        _, preds = scores.max(1)
+        loss = loss_fcn(scores, y)
+        
+        num_correct += (preds == y).sum()
+        num_samples += preds.size(0)
+
+    print(float(num_correct)/num_samples)
+    
+    with open('test.pkl', 'wb') as handle:
+        pickle.dump([loss.item(), float(num_correct)/num_samples], handle, protocol = pickle.HIGHEST_PROTOCOL)
+    
     
 if __name__ == '__main__':
     main()
