@@ -1,4 +1,4 @@
-lu# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Created on Sat May 11 15:22:30 2019
 
@@ -7,7 +7,9 @@ Created on Sat May 11 15:22:30 2019
 import torch
 import torchvision
 import numpy as np
+import torchvision.transforms as transforms
 import torchvision.models as models
+import matplotlib.pyplot as plt
 import pickle
 import visdom
 import time
@@ -33,9 +35,9 @@ def main():
     ####Subset of data#####
     #choice of random index
     
-    rand_idx = random.choices(range(100000), k = 640)
+    rand_idx = random.choices(range(100000), k = 320)
     rand_idx2 = random.choices(range(10000), k = 320)
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size = 64, 
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size = 32, 
                                                sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx))
     val_loader = torch.utils.data.DataLoader(val_set, batch_size = 32, 
                                                sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx2))
@@ -47,7 +49,7 @@ def main():
     res_net = models.resnet50(num_classes = 200)
     res_net.to(device)
     loss_fcn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(res_net.parameters(), lr = .0001, weight_decay = 0)
+    optimizer = torch.optim.Adam(res_net.parameters(), lr = 1, weight_decay = 0)
     
     epochs = 50
     print_every = 1
@@ -80,27 +82,29 @@ def main():
                                xlabels = 'Epochs',
                                ylabels = 'Time'))
     
-
+    #####debugging#######
+    train_plot = viz.line(Y = torch.tensor([0]).zero_(), opts = dict(title = 'Training Loss Tracker',
+                               xlabels = 'Iteration',
+                               ylabels = 'Time'))
+    
+    #####################
     
     epoch_time = []
     for e in range(epochs):
-        #####debugging#######
-        train_plot = viz.line(Y = torch.tensor([0]).zero_(), opts = dict(title = 'Training Loss Tracker',
-                              xlabels = 'Iteration',
-                              ylabels = 'Time'))
-        #####################
-        
         print('Epoch ', e)
         epoch_start = time.time()
-        #Training        
-        res_net.train()
+        #Training
+        num_correct = 0
+        num_samples = 0
+        
         iter_train_loss = []
         iter_train_acc = []
-        
+
+        #Training
         for t, (x,y) in enumerate(train_loader):
             num_correct = 0
             num_samples = 0
-            
+            res_net.train()
             x = x.to(device = device)
             y = y.to(device = device)
             
@@ -122,8 +126,6 @@ def main():
             if (t % print_every) == 0:
                 print('Training: Iteration %d, loss = %.3f' % (t, loss.item()))    
                 print('Training: Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100*float(num_correct)/num_samples))
-        
-        
         
         train_loss.append(np.mean(iter_train_loss))
         train_acc.append(np.mean(iter_train_acc))
@@ -162,7 +164,7 @@ def main():
         viz_tracker(epoch_time_plot, torch.tensor([epoch_time[e]]), torch.tensor([e]) )
         viz_tracker(loss_plot, torch.tensor([[train_loss[e], valid_loss[e]]]), torch.tensor([[e,e]]))
         viz_tracker(acc_plot, torch.tensor([[train_acc[e], valid_acc[e]]]), torch.tensor([[e,e]]))
-        viz.close(win = train_plot)
+        
         #Save resulting arrays so far every 10 or so epochs
         if((e+1) % 10 == 0):
             with open('train_loss.pkl', 'wb') as handle:
@@ -175,7 +177,26 @@ def main():
                 pickle.dump(valid_acc, handle, protocol = pickle.HIGHEST_PROTOCOL)
             with open('epoch_time.pkl', 'wb') as handle:
                 pickle.dump(epoch_time, handle, protocol = pickle.HIGHEST_PROTOCOL)
+        
+    #calculate test loss
+    num_correct = 0
+    num_samples = 0
+    res_net.eval()
+    for x, y in test_loader:
+        x = x.to(device = device)
+        y = y.to(device = device)
+        
+        scores = res_net(x)
+        _, preds = scores.max(1)
+        loss = loss_fcn(scores, y)
+        
+        num_correct += (preds == y).sum()
+        num_samples += preds.size(0)
 
+    print(float(num_correct)/num_samples)
+    
+    with open('test.pkl', 'wb') as handle:
+        pickle.dump([loss.item(), float(num_correct)/num_samples], handle, protocol = pickle.HIGHEST_PROTOCOL)
     
     
 if __name__ == '__main__':
