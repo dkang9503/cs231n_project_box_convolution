@@ -18,10 +18,10 @@ from tiny_imagenet_loader import data_loader
 
 def main():
     
-    train_set, val_set = data_loader(rootdir = './data/ImageNet/tiny-imagenet-200/', normalized =True)
+    train_set, val_set = data_loader(rootdir = '../Code/data/ImageNet/tiny-imagenet-200/', normalized =True)
     
-    #train_loader = torch.utils.data.DataLoader(train_set, batch_size = 128, shuffle = True)
-    #val_loader = torch.utils.data.DataLoader(val_set, batch_size = 128)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size = 128, shuffle = True)
+    val_loader = torch.utils.data.DataLoader(val_set, batch_size = 128)
     
     '''
     #Calculating mean/sd of the pixel channels
@@ -35,23 +35,23 @@ def main():
     ####Subset of data#####
     #choice of random index
     
-    rand_idx = random.choices(range(100000), k = 320)
-    rand_idx2 = random.choices(range(10000), k = 320)
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size = 32, 
-                                               sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx))
-    val_loader = torch.utils.data.DataLoader(val_set, batch_size = 32, 
-                                               sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx2))
+#     rand_idx = random.choices(range(100000), k = 320)
+#     rand_idx2 = random.choices(range(10000), k = 320)
+#     train_loader = torch.utils.data.DataLoader(train_set, batch_size = 32, 
+#                                                sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx))
+#     val_loader = torch.utils.data.DataLoader(val_set, batch_size = 32, 
+#                                                sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx2))
     
     #######################
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    res_net = models.resnet50(num_classes = 200)
+    res_net = models.resnet18(num_classes = 200)
     res_net.to(device)
     loss_fcn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(res_net.parameters(), lr = 1, weight_decay = 0)
+    optimizer = torch.optim.Adam(res_net.parameters(), lr = 3e-4, weight_decay = 0.0001)
     
-    epochs = 50
+    epochs = 5
     print_every = 1
     
     train_loss = []
@@ -179,24 +179,24 @@ def main():
                 pickle.dump(epoch_time, handle, protocol = pickle.HIGHEST_PROTOCOL)
         
     #calculate test loss
-    num_correct = 0
-    num_samples = 0
-    res_net.eval()
-    for x, y in test_loader:
-        x = x.to(device = device)
-        y = y.to(device = device)
+#     num_correct = 0
+#     num_samples = 0
+#     res_net.eval()
+#     for x, y in test_loader:
+#         x = x.to(device = device)
+#         y = y.to(device = device)
         
-        scores = res_net(x)
-        _, preds = scores.max(1)
-        loss = loss_fcn(scores, y)
+#         scores = res_net(x)
+#         _, preds = scores.max(1)
+#         loss = loss_fcn(scores, y)
         
-        num_correct += (preds == y).sum()
-        num_samples += preds.size(0)
+#         num_correct += (preds == y).sum()
+#         num_samples += preds.size(0)
 
-    print(float(num_correct)/num_samples)
+#     print(float(num_correct)/num_samples)
     
-    with open('test.pkl', 'wb') as handle:
-        pickle.dump([loss.item(), float(num_correct)/num_samples], handle, protocol = pickle.HIGHEST_PROTOCOL)
+#     with open('test.pkl', 'wb') as handle:
+#         pickle.dump([loss.item(), float(num_correct)/num_samples], handle, protocol = pickle.HIGHEST_PROTOCOL)
     
     
 if __name__ == '__main__':
