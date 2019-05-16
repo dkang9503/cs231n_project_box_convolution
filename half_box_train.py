@@ -17,7 +17,7 @@ from models.HalfBoxResNet import resnetHalfBox
 
 def main():
     
-    train_set, val_set = data_loader(rootdir = './data/ImageNet/tiny-imagenet-200/', normalized =True)
+    train_set, val_set = data_loader(rootdir = '../Code/data/ImageNet/tiny-imagenet-200/', normalized =True)
     
     train_loader = torch.utils.data.DataLoader(train_set, batch_size = 128, shuffle = True)
     val_loader = torch.utils.data.DataLoader(val_set, batch_size = 128)
