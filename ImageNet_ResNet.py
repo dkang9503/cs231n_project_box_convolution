@@ -18,18 +18,18 @@ from torch.utils.data.sampler import SubsetRandomSampler
 
 def main():
     
-    train_set = torchvision.datasets.ImageFolder(root = './data/ImageNet/tiny-imagenet-200/train', transform=
+    train_set = torchvision.datasets.ImageFolder(root = '../Code/data/ImageNet/tiny-imagenet-200/train', transform=
                                                  transforms.Compose([transforms.ToTensor(),
                                                         transforms.Normalize(mean =[.4802486, .44807222, .39754647],
                                                                              std = [.2769859, .26906505, .2820814])]))
     
-    test_set = torchvision.datasets.ImageFolder(root = './data/ImageNet/tiny-imagenet-200/test', transform=
+    test_set = torchvision.datasets.ImageFolder(root = '../Code/data/ImageNet/tiny-imagenet-200/test', transform=
                                                  transforms.Compose([transforms.ToTensor(),
                                                         transforms.Normalize(mean =[.4802486, .44807222, .39754647],
                                                                              std = [.2769859, .26906505, .2820814])]))
     
-    train_indices = np.empty(90000)
-    val_indices = np.empty(10000)
+    train_indices = np.empty(90000, dtype = int)
+    val_indices = np.empty(10000, dtype = int)
     
     for i in range(200):
         temp_list = np.array(range(500*i, 500+500*i))
