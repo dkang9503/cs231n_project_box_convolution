@@ -289,28 +289,28 @@ class HalfBoxResNet(nn.Module):
 
         return nn.Sequential(*layers)
     
-    def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
+    def _make_layer(self, planes, blocks, stride=1, dilate=False):
         norm_layer = self._norm_layer
         downsample = None
         previous_dilation = self.dilation
         if dilate:
             self.dilation *= stride
             stride = 1
-        if stride != 1 or self.inplanes != planes * block.expansion: #64 \neq 64* 4, so TRUE
+        if stride != 1 or self.inplanes != planes * 4: #64 \neq 64* 4, so TRUE
             downsample = nn.Sequential(
-                conv1x1(self.inplanes, planes * block.expansion, stride), # receives 64, makes output 64*4, stride = 1
-                norm_layer(planes * block.expansion),
+                conv1x1(self.inplanes, planes * 4, stride), # receives 64, makes output 64*4, stride = 1
+                norm_layer(planes * 4),
             )
 
         layers = []
         #Bottleneck(64, 64, stide = 1, downsample,  )
-        layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
+        layers.append(Bottleneck(self.inplanes, planes, stride, downsample, self.groups,
                             self.base_width, previous_dilation, norm_layer))
-        self.inplanes = planes * block.expansion #now self.inplanes = 256
+        self.inplanes = planes * 4 #now self.inplanes = 256
         
         #For the rest of the blocks, blocks = 3
         for _ in range(1, blocks):
-            layers.append(block(self.inplanes, planes, groups=self.groups,
+            layers.append(Bottleneck(self.inplanes, planes, groups=self.groups,
                                 base_width=self.base_width, dilation=self.dilation,
                                 norm_layer=norm_layer))
 
