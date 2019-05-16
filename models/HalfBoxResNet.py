@@ -193,7 +193,7 @@ class HalfBoxResNet(nn.Module):
         #Output is 64x16x16
         
         #_make_layer(self, BottleNeck, 64, 3, stride=1, dilate=False):
-        self.layer1 = self._make_layer(64, layers[0]) #3
+        self.layer1 = self._make_layer1(64, layers[0]) #3
         self.layer2 = self._make_layer(128, layers[1], stride=2, #4
                                        dilate=replace_stride_with_dilation[0])
         self.layer3 = self._make_layer(256, layers[2], stride=2, #6
@@ -214,7 +214,7 @@ class HalfBoxResNet(nn.Module):
     
     #self.inplanes = 64
     #_make_layer(self, BottleNeck, 64, 3, stride=1, dilate=False):
-    def _make_layer(self, planes, blocks, stride=1, dilate=False):
+    def _make_layer2(self, planes, blocks, stride=1, dilate=False):
         norm_layer = self._norm_layer
         downsample = None
         max_input_h = 64
@@ -257,6 +257,64 @@ class HalfBoxResNet(nn.Module):
         #   Bottleneck(self.inplanes = 512, planes = 128, stride = 1, downsample)    
         #   Bottleneck(self.inplanes = 512, planes = 128, stride = 1, downsample)    
         #]            
+    def _make_layer1(self, planes, blocks, stride=1, dilate=False):
+        norm_layer = self._norm_layer
+        downsample = None
+        max_input_h = 64
+        max_input_w = 64
+        previous_dilation = self.dilation
+        if dilate:
+            self.dilation *= stride
+            stride = 1
+        if stride != 1 or self.inplanes != planes * BottleneckBoxConv.expansion: #64 \neq 64* 4, so TRUE
+            downsample = nn.Sequential(
+                conv1x1(self.inplanes, planes * BottleneckBoxConv.expansion, stride), # receives 64, makes output 64*4, stride = 1
+                norm_layer(planes * BottleneckBoxConv.expansion),
+        )
+
+        layers = []
+        #Bottleneck(64, 64, stide = 1, downsample,  )
+        layers.append(Bottleneck(self.inplanes, planes, stride, downsample, self.groups,
+                            self.base_width, previous_dilation, norm_layer))
+        self.inplanes = planes * Bottleneck.expansion #now self.inplanes = 256
+        
+        #For the rest of the blocks, blocks = 3
+        for i in range(1, blocks):
+            if (i == 1):
+                layers.append(BottleneckBoxConv(self.inplanes, planes, max_input_h, max_input_w, dropout_prob = 0.15 ))
+            else:
+                layers.append(Bottleneck(self.inplanes, planes, groups=self.groups,
+                                    base_width=self.base_width, dilation=self.dilation,
+                                    norm_layer=norm_layer))
+
+        return nn.Sequential(*layers)
+    
+    def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
+        norm_layer = self._norm_layer
+        downsample = None
+        previous_dilation = self.dilation
+        if dilate:
+            self.dilation *= stride
+            stride = 1
+        if stride != 1 or self.inplanes != planes * block.expansion: #64 \neq 64* 4, so TRUE
+            downsample = nn.Sequential(
+                conv1x1(self.inplanes, planes * block.expansion, stride), # receives 64, makes output 64*4, stride = 1
+                norm_layer(planes * block.expansion),
+            )
+
+        layers = []
+        #Bottleneck(64, 64, stide = 1, downsample,  )
+        layers.append(block(self.inplanes, planes, stride, downsample, self.groups,
+                            self.base_width, previous_dilation, norm_layer))
+        self.inplanes = planes * block.expansion #now self.inplanes = 256
+        
+        #For the rest of the blocks, blocks = 3
+        for _ in range(1, blocks):
+            layers.append(block(self.inplanes, planes, groups=self.groups,
+                                base_width=self.base_width, dilation=self.dilation,
+                                norm_layer=norm_layer))
+
+        return nn.Sequential(*layers)
         
     def forward(self, x):
         #Input dimension is 3x64x64
