@@ -178,6 +178,17 @@ def main():
         epoch_end = time.time()
         epoch_time.append(epoch_end- epoch_start)
         
+        if e % 20 == 0:
+            state = {
+                'epoch': e,
+                'state_dict': res_net.state_dict(),
+                'optimizer': optimizer.state_dict()
+            }
+            
+            torch.save(state, str(epoch)+'modelstate.pth'
+                       
+            #state = torch.load(filepath)
+        
         #Update plots
         viz_tracker(epoch_time_plot, torch.tensor([epoch_time[e]]), torch.tensor([e]) )
         viz_tracker(loss_plot, torch.tensor([[train_loss[e], valid_loss[e]]]), torch.tensor([[e,e]]))
