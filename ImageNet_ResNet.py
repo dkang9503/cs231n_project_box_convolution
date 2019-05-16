@@ -1,4 +1,4 @@
-lu# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Created on Sat May 11 15:22:30 2019
 
@@ -8,18 +8,42 @@ import torch
 import torchvision
 import numpy as np
 import torchvision.models as models
+import torchvision.transforms as transforms
 import pickle
 import visdom
 import time
 import random
 from tiny_imagenet_loader import data_loader
+from torch.utils.data.sampler import SubsetRandomSampler
 
 def main():
     
-    train_set, val_set = data_loader(rootdir = './data/ImageNet/tiny-imagenet-200/', normalized =True)
+    train_set = torchvision.datasets.ImageFolder(root = './data/ImageNet/tiny-imagenet-200/train', transform=
+                                                 transforms.Compose([transforms.ToTensor(),
+                                                        transforms.Normalize(mean =[.4802486, .44807222, .39754647],
+                                                                             std = [.2769859, .26906505, .2820814])]))
     
-    #train_loader = torch.utils.data.DataLoader(train_set, batch_size = 128, shuffle = True)
-    #val_loader = torch.utils.data.DataLoader(val_set, batch_size = 128)
+    test_set = torchvision.datasets.ImageFolder(root = './data/ImageNet/tiny-imagenet-200/test', transform=
+                                                 transforms.Compose([transforms.ToTensor(),
+                                                        transforms.Normalize(mean =[.4802486, .44807222, .39754647],
+                                                                             std = [.2769859, .26906505, .2820814])]))
+    
+    train_indices = np.empty(90000)
+    val_indices = np.empty(10000)
+    
+    for i in range(200):
+        temp_list = np.array(range(500*i, 500+500*i))
+        rand_samp_idx = random.sample(range(500), 50)
+        mask = np.array([False]*500)
+        mask[np.array(rand_samp_idx)] = True
+        val_indices[(50*i):(50*i+50)] = temp_list[mask]
+        train_indices[(450*i):(450*i+450)] = temp_list[mask == False]
+    
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size = 128, 
+                                               sampler = SubsetRandomSampler(train_indices))
+    val_loader = torch.utils.data.DataLoader(train_set, batch_size = 128, 
+                                               sampler = SubsetRandomSampler(val_indices))
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size = 128, shuffle = True)
     
     '''
     #Calculating mean/sd of the pixel channels
@@ -32,14 +56,14 @@ def main():
     
     ####Subset of data#####
     #choice of random index
-    
+    '''
     rand_idx = random.choices(range(100000), k = 640)
     rand_idx2 = random.choices(range(10000), k = 320)
     train_loader = torch.utils.data.DataLoader(train_set, batch_size = 64, 
                                                sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx))
     val_loader = torch.utils.data.DataLoader(val_set, batch_size = 32, 
                                                sampler = torch.utils.data.sampler.SubsetRandomSampler(rand_idx2))
-    
+    '''
     #######################
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -175,8 +199,30 @@ def main():
                 pickle.dump(valid_acc, handle, protocol = pickle.HIGHEST_PROTOCOL)
             with open('epoch_time.pkl', 'wb') as handle:
                 pickle.dump(epoch_time, handle, protocol = pickle.HIGHEST_PROTOCOL)
+        
+    #calculate test loss
+    num_correct = 0
+    num_samples = 0
+    res_net.eval()
+    for x, y in test_loader:
+        x = x.to(device = device)
+        y = y.to(device = device)
 
+        scores = res_net(x)
+        _, preds = scores.max(1)
+        loss = loss_fcn(scores, y)
+
+        num_correct += (preds == y).sum()
+        num_samples += preds.size(0)
     
+    with open('test_pred.pkl', 'wb') as handle:
+        pickle.dump(preds, handle, protocol = pickle.HIGHEST_PROTOCOL)
+
+    with open('test_scores.pkl', 'wb') as handle:
+        pickle.dump(scores, handle, protocol = pickle.HIGHEST_PROTOCOL)    
+    
+    with open('test_acc.pkl', 'wb') as handle:
+        pickle.dump(float(num_correct)/num_samples, handle, protocol = pickle.HIGHEST_PROTOCOL)
     
 if __name__ == '__main__':
     main()

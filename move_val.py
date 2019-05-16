@@ -14,7 +14,7 @@ def create_val_img_folder():
     '''
     This method is responsible for separating validation images into separate sub folders
     '''
-    dataset_dir = '/home/harryemeric/Project/Code/data/ImageNet/tiny-imagenet-200/' 
+    dataset_dir = '/home/dkang/Project/Code/data/ImageNet/tiny-imagenet-200/' 
             #os.path.join(args.data_dir, args.dataset)
         
     val_dir = os.path.join(dataset_dir, 'val')
