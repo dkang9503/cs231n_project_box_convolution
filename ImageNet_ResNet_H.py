@@ -54,7 +54,7 @@ def main():
     res_net = models.resnet50(num_classes = 200)
     res_net.to(device)
     loss_fcn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(res_net.parameters(), lr = .0001, weight_decay = 0)
+    optimizer = torch.optim.Adam(res_net.parameters(), lr = 3e-4, weight_decay = 1)
     
     epochs = 50
     print_every = 1

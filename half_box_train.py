@@ -185,7 +185,7 @@ def main():
                 'optimizer': optimizer.state_dict()
             }
             
-            torch.save(state, str(epoch)+'modelstate.pth'
+            torch.save(state, str(e)+'modelstate.pth')
                        
             #state = torch.load(filepath)
         
