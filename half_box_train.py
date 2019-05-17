@@ -70,15 +70,18 @@ def main():
     res_net = resnetHalfBox(num_classes = 200)
     res_net.to(device)
     loss_fcn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(res_net.parameters(), lr = 3e-4, weight_decay = 0)
+    optimizer = torch.optim.SGD(res_net.parameters(), lr = 0.05, weight_decay = 1e-4, momentum = .9)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 10, gamma = .1 )
     
-    epochs = 100
+    epochs = 50
     print_every = 100
     
     train_loss = []
     valid_loss = []
-    train_acc = []
-    valid_acc = []
+    train_acc1 = []
+    train_acc5 = []
+    valid_acc1 = []
+    valid_acc5 = []
     
     #importing visualization    
     viz = visdom.Visdom()
@@ -118,11 +121,10 @@ def main():
         #Training
         res_net.train()
         iter_train_loss = []
-        iter_train_acc = []
+        iter_train_acc1 = []
+        iter_train_acc5 = []
 
-        for t, (x,y) in enumerate(train_loader):
-            num_correct = 0
-            num_samples = 0
+        for t, (x,y) in enumerate(train_loader):            
             x = x.to(device = device)
             y = y.to(device = device)
             
@@ -130,49 +132,50 @@ def main():
             loss = loss_fcn(scores, y)
             iter_train_loss.append(loss.item()) #to keep track of loss
             
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()    
-            optimizer.zero_grad()
+            
             
             _, preds = scores.max(1)
-            num_correct += (preds == y).sum()
-            num_samples += preds.size(0)
+            acc1, acc5 = accuracy(scores, y, topk=(1, 5))
             
-            iter_train_acc.append(float(num_correct)/num_samples)  
+            iter_train_acc1.append(acc1)            
+            iter_train_acc5.append(acc5)
             viz_tracker(train_plot, torch.tensor([iter_train_loss[t]]), torch.tensor([t]))
             
             if t % print_every == 0:
-                print('Iteration %d, loss = %.3f' % (t, loss.item()))    
-                print('Training: Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100*float(num_correct)/num_samples))
+                print('Training: Iteration %d, loss = %.3f' % (t, loss.item()))    
+                print('Training: Got Top1: (%.2f), Top5: (%.2f)' % (acc1, acc5))
         
         train_loss.append(np.mean(iter_train_loss))
-        train_acc.append(np.mean(iter_train_acc))
+        train_acc1.append(np.mean(iter_train_acc1))
+        train_acc5.append(np.mean(iter_train_acc5))
         
         #Validation
         print('Checking accuracy on validation set')
-        num_correct = 0
-        num_samples = 0
         res_net.eval()
         with torch.no_grad():
             iter_valid_loss = []
-            iter_valid_acc = []
+            iter_valid_acc1 = []
+            iter_valid_acc5 = []
             for t, (x, y) in enumerate(val_loader):               
                 x = x.to(device = device)
                 y = y.to(device = device)
                 
-                scores = res_net(x)
-                _, preds = scores.max(1)
+                scores = res_net(x)                
                 loss = loss_fcn(scores, y)
                 iter_valid_loss.append(loss.item())
                 
-                num_correct += (preds == y).sum()
-                num_samples += preds.size(0)
+                acc1, acc5 = accuracy(scores, y, topk=(1,5))
                 
-                iter_valid_acc.append(float(num_correct)/num_samples)                
+                iter_valid_acc1.append(acc1)
+                iter_valid_acc5.append(acc5)
                 
             valid_loss.append(np.mean(iter_valid_loss))
-            valid_acc.append(np.mean(iter_valid_acc))
-            print('Got %d / %d correct (%.2f)' % (num_correct, num_samples, 100*float(num_correct)/num_samples))
+            valid_acc1.append(np.mean(iter_valid_acc1))
+            valid_acc5.append(np.mean(iter_valid_acc5))
+            print('Validation: Top1: (%.2f), Top5: (%.2f)' % (acc1, acc5))
     
         #Epoch time
         epoch_end = time.time()
@@ -185,14 +188,18 @@ def main():
                 'optimizer': optimizer.state_dict()
             }
             
+<<<<<<< HEAD
+            torch.save(state, str(e)+'modelstate.pth')
+=======
             torch.save(state, str(epoch)+'modelstate.pth')
+>>>>>>> 8ae4b9f2f439ccdc94f0b5bd4f33e7d6526ccc6b
                        
             #state = torch.load(filepath)
         
         #Update plots
         viz_tracker(epoch_time_plot, torch.tensor([epoch_time[e]]), torch.tensor([e]) )
         viz_tracker(loss_plot, torch.tensor([[train_loss[e], valid_loss[e]]]), torch.tensor([[e,e]]))
-        viz_tracker(acc_plot, torch.tensor([[train_acc[e], valid_acc[e]]]), torch.tensor([[e,e]]))
+        viz_tracker(acc_plot, torch.tensor([[train_acc1[e], valid_acc1[e]]]), torch.tensor([[e,e]]))
         viz.close(win = train_plot)
         
         #Save resulting arrays so far every 10 or so epochs
@@ -201,27 +208,25 @@ def main():
                 pickle.dump(train_loss, handle, protocol = pickle.HIGHEST_PROTOCOL)
             with open('valid_loss.pkl', 'wb') as handle:
                 pickle.dump(valid_loss, handle, protocol = pickle.HIGHEST_PROTOCOL)
-            with open('train_acc.pkl', 'wb') as handle:
-                pickle.dump(train_acc, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            with open('train_acc1.pkl', 'wb') as handle:
+                pickle.dump(train_acc1, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            with open('train_acc5.pkl', 'wb') as handle:
+                pickle.dump(train_acc5, handle, protocol = pickle.HIGHEST_PROTOCOL)
             with open('valid_acc.pkl', 'wb') as handle:
                 pickle.dump(valid_acc, handle, protocol = pickle.HIGHEST_PROTOCOL)
             with open('epoch_time.pkl', 'wb') as handle:
                 pickle.dump(epoch_time, handle, protocol = pickle.HIGHEST_PROTOCOL)
                 
-    #calculate test loss
-    num_correct = 0
-    num_samples = 0
+    #calculate test loss 
     res_net.eval()
     for x, y in test_loader:
         x = x.to(device = device)
         y = y.to(device = device)
 
-        scores = res_net(x)
-        _, preds = scores.max(1)
+        scores = res_net(x)        
         loss = loss_fcn(scores, y)
 
-        num_correct += (preds == y).sum()
-        num_samples += preds.size(0)
+        acc1, acc5 = accuracy(scores, y, topk=(1,5))
     
     with open('test_pred.pkl', 'wb') as handle:
         pickle.dump(preds, handle, protocol = pickle.HIGHEST_PROTOCOL)
@@ -231,6 +236,22 @@ def main():
     
     with open('test_acc.pkl', 'wb') as handle:
         pickle.dump(float(num_correct)/num_samples, handle, protocol = pickle.HIGHEST_PROTOCOL)
-    
+
+def accuracy(output, target, topk=(1,)):
+    """Computes the accuracy over the k top predictions for the specified values of k"""
+    with torch.no_grad():
+        maxk = max(topk)
+        batch_size = target.size(0)
+
+        _, pred = output.topk(maxk, 1, True, True)
+        pred = pred.t()
+        correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+        res = []
+        for k in topk:
+            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            res.append(correct_k.mul_(100.0 / batch_size))
+        return res       
+
 if __name__ == '__main__':
     main()
