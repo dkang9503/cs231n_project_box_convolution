@@ -71,7 +71,7 @@ def main():
     res_net = models.resnet50(num_classes = 200)
     res_net.to(device)
     loss_fcn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(res_net.parameters(), lr = 3e-3, weight_decay = 0)
+    optimizer = torch.optim.Adam(res_net.parameters(), lr = 3e-3, weight_decay = .001)
     
     epochs = 50
     print_every = 100
@@ -189,12 +189,12 @@ def main():
                 'optimizer': optimizer.state_dict()
             }
             
-            torch.save(state, str(epoch)+'modelstate.pth'
+            torch.save(state, str(epoch)+'modelstateRN.pth')
                        
             #state = torch.load(filepath)
         
         #Update plots
-        viz_tracker(epoch_time_plot, torch.tensor([epoch_time[e]]), torch.tensor([e]) )
+        viz_tracker(epoch_time_plot, torch.tensor([epoch_time[e]]), torch.tensor([e]))
         viz_tracker(loss_plot, torch.tensor([[train_loss[e], valid_loss[e]]]), torch.tensor([[e,e]]))
         viz_tracker(acc_plot, torch.tensor([[train_acc[e], valid_acc[e]]]), torch.tensor([[e,e]]))
         viz.close(win = train_plot)
