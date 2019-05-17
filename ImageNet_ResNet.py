@@ -17,6 +17,7 @@ from tiny_imagenet_loader import data_loader
 from torch.utils.data.sampler import SubsetRandomSampler
 
 def main():
+    print('Updated 5/17/19, 12:04PM')
     
     train_set = torchvision.datasets.ImageFolder(root = '../Code/data/ImageNet/tiny-imagenet-200/train', transform=
                                                  transforms.Compose([transforms.ToTensor(),

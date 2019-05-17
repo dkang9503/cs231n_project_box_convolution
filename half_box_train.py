@@ -235,7 +235,7 @@ def main():
         pickle.dump(scores, handle, protocol = pickle.HIGHEST_PROTOCOL)    
     
     with open('test_acc.pkl', 'wb') as handle:
-        pickle.dump(float(num_correct)/num_samples, handle, protocol = pickle.HIGHEST_PROTOCOL)
+        pickle.dump([acc1, acc5], handle, protocol = pickle.HIGHEST_PROTOCOL)
 
 def accuracy(output, target, topk=(1,)):
     """Computes the accuracy over the k top predictions for the specified values of k"""
