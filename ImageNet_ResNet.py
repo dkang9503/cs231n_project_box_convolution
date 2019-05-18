@@ -72,7 +72,7 @@ def main():
     res_net = models.resnet50(num_classes = 200)
     res_net.to(device)
     loss_fcn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(res_net.parameters(), lr = 0.05, weight_decay = 1e-3, momentum = .9)
+    optimizer = torch.optim.SGD(res_net.parameters(), lr = 0.05, weight_decay = 1e-2, momentum = .9)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 10, gamma = .1 )
     
     epochs = 50
@@ -140,8 +140,7 @@ def main():
             optimizer.step()                
                                
             acc1, acc5 = accuracy(scores, y, topk=(1, 5))
-            
-            
+                        
             iter_train_acc1.append(acc1.data.cpu().numpy()[0])
             iter_train_acc5.append(acc5.data.cpu().numpy()[0])
             viz_tracker(train_plot, torch.tensor([iter_train_loss[t]]), torch.tensor([t]))
@@ -174,7 +173,6 @@ def main():
                 iter_valid_acc1.append(acc1.data.cpu().numpy()[0])
                 iter_valid_acc5.append(acc5.data.cpu().numpy()[0])
                     
-                
             valid_loss.append(np.mean(iter_valid_loss))
             valid_acc1.append(np.mean(iter_valid_acc1))
             valid_acc5.append(np.mean(iter_valid_acc5))            
@@ -202,6 +200,7 @@ def main():
         viz_tracker(loss_plot, torch.tensor([[train_loss[e], valid_loss[e]]]), torch.tensor([[e,e]]))
         viz_tracker(acc_plot, torch.tensor([[train_acc1[e], valid_acc1[e]]]), torch.tensor([[e,e]]))
         viz.close(win = train_plot)
+        
         #Save resulting arrays so far every 10 or so epochs
         if((e+1) % 10 == 0):
             with open('train_loss.pkl', 'wb') as handle:

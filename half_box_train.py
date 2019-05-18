@@ -121,8 +121,8 @@ def main():
         #Training
         res_net.train()
         iter_train_loss = []
-        iter_train_acc1 = torch.tensor([])
-        iter_train_acc5 = torch.tensor([])
+        iter_train_acc1 = []
+        iter_train_acc5 = []
 
         for t, (x,y) in enumerate(train_loader):            
             x = x.to(device = device)
@@ -142,7 +142,7 @@ def main():
             iter_train_acc5.append(acc5.data.cpu().numpy()[0])
             viz_tracker(train_plot, torch.tensor([iter_train_loss[t]]), torch.tensor([t]))
             
-            if t % print_every == 0:
+            if (t % print_every) == 0:
                 print('Training: Iteration %d, loss = %.3f' % (t, loss.item()))    
                 print('Training: Got Top1: (%.2f), Top5: (%.2f)' % (acc1, acc5))
         
@@ -155,8 +155,8 @@ def main():
         res_net.eval()
         with torch.no_grad():
             iter_valid_loss = []
-            iter_valid_acc1 = torch.tensor([])
-            iter_valid_acc5 = torch.tensor([])
+            iter_valid_acc1 = []
+            iter_valid_acc5 = []
             for t, (x, y) in enumerate(val_loader):               
                 x = x.to(device = device)
                 y = y.to(device = device)
@@ -171,8 +171,8 @@ def main():
                 iter_valid_acc5.append(acc5.data.cpu().numpy()[0])
                 
             valid_loss.append(np.mean(iter_valid_loss))
-            valid_acc1.append(torch.mean(iter_valid_acc1))
-            valid_acc5.append(torch.mean(iter_valid_acc5))
+            valid_acc1.append(np.mean(iter_valid_acc1))
+            valid_acc5.append(np.mean(iter_valid_acc5))
             print('Validation: Top1: (%.2f), Top5: (%.2f)' % (acc1, acc5))
     
         scheduler.step()
@@ -188,7 +188,7 @@ def main():
                 'optimizer': optimizer.state_dict()
             }
             
-            torch.save(state, str(e)+'modelstate.pth')            
+            torch.save(state, str(e)+'modelstateHB.pth')            
                        
             #state = torch.load(filepath)
         
