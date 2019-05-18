@@ -72,7 +72,7 @@ def main():
     res_net = models.resnet50(num_classes = 200)
     res_net.to(device)
     loss_fcn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(res_net.parameters(), lr = 0.05, weight_decay = 1e-4, momentum = .9)
+    optimizer = torch.optim.SGD(res_net.parameters(), lr = 0.05, weight_decay = 1e-3, momentum = .9)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = 10, gamma = .1 )
     
     epochs = 50
@@ -142,8 +142,8 @@ def main():
             acc1, acc5 = accuracy(scores, y, topk=(1, 5))
             
             
-            iter_train_acc1.append(acc1)            
-            iter_train_acc5.append(acc5)            
+            iter_train_acc1.append(acc1.data.cpu().numpy()[0])
+            iter_train_acc5.append(acc5.data.cpu().numpy()[0])
             viz_tracker(train_plot, torch.tensor([iter_train_loss[t]]), torch.tensor([t]))
             
             if (t % print_every) == 0:
@@ -171,13 +171,13 @@ def main():
                 
                 acc1, acc5 = accuracy(scores, y, topk=(1,5))
                 
-                iter_valid_acc1.append(acc1)
-                iter_valid_acc5.append(acc5)
+                iter_valid_acc1.append(acc1.data.cpu().numpy()[0])
+                iter_valid_acc5.append(acc5.data.cpu().numpy()[0])
                     
                 
             valid_loss.append(np.mean(iter_valid_loss))
             valid_acc1.append(np.mean(iter_valid_acc1))
-            valid_acc5.append(np.mean(iter_valid_acc5))
+            valid_acc5.append(np.mean(iter_valid_acc5))            
             print('Validation: Top1: (%.2f), Top5: (%.2f)' % (acc1, acc5))
     
         scheduler.step()
@@ -212,8 +212,10 @@ def main():
                 pickle.dump(train_acc1, handle, protocol = pickle.HIGHEST_PROTOCOL)
             with open('train_acc5.pkl', 'wb') as handle:
                 pickle.dump(train_acc5, handle, protocol = pickle.HIGHEST_PROTOCOL)
-            with open('valid_acc.pkl', 'wb') as handle:
-                pickle.dump(valid_acc, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            with open('valid_acc1.pkl', 'wb') as handle:
+                pickle.dump(valid_acc1, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            with open('valid_acc5.pkl', 'wb') as handle:
+                pickle.dump(valid_acc5, handle, protocol = pickle.HIGHEST_PROTOCOL)
             with open('epoch_time.pkl', 'wb') as handle:
                 pickle.dump(epoch_time, handle, protocol = pickle.HIGHEST_PROTOCOL)
         
@@ -226,16 +228,13 @@ def main():
         scores = res_net(x)        
         loss = loss_fcn(scores, y)
 
-        acc1, acc5 = accuracy(scores, y, topk=(1,5))
-    
-    with open('test_pred.pkl', 'wb') as handle:
-        pickle.dump(preds, handle, protocol = pickle.HIGHEST_PROTOCOL)
+        acc1, acc5 = accuracy(scores, y, topk=(1,5))        
 
     with open('test_scores.pkl', 'wb') as handle:
         pickle.dump(scores, handle, protocol = pickle.HIGHEST_PROTOCOL)    
     
     with open('test_acc.pkl', 'wb') as handle:
-        pickle.dump( [acc1, acc5] , handle, protocol = pickle.HIGHEST_PROTOCOL)
+        pickle.dump( [acc1.data.cpu().numpy()[0], acc5.data.cpu().numpy()[0]] , handle, protocol = pickle.HIGHEST_PROTOCOL)
 
 def accuracy(output, target, topk=(1,)):
     """Computes the accuracy over the k top predictions for the specified values of k"""
