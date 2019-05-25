@@ -39,11 +39,10 @@ def main():
     model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
-        
-    print(len(model_names))
+    
+    print(model_names)
         
     args = parser.parse_args()
-    print("Args Parsed")
     print('Training with learning rate {}'.format(args.lr))
     
     # Data loading code
@@ -71,11 +70,11 @@ def main():
         val_indices[(50*i):(50*i+50)] = temp_list[mask]
         train_indices[(450*i):(450*i+450)] = temp_list[mask == False]
     
-#     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, 
-#                                                sampler = SubsetRandomSampler(train_indices))
-#     val_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, 
-#                                                sampler = SubsetRandomSampler(val_indices))
-#     test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle = True)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, 
+                                               sampler = SubsetRandomSampler(train_indices))
+    val_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size, 
+                                               sampler = SubsetRandomSampler(val_indices))
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size, shuffle = True)
     
     '''
     #Calculating mean/sd of the pixel channels
@@ -122,154 +121,154 @@ def main():
     valid_acc1 = []
     valid_acc5 = []
     
-#     #importing visualization    
-#     viz = visdom.Visdom()
-#     viz.close()
+    #importing visualization    
+    viz = visdom.Visdom()
+    viz.close()
     
-#     def viz_tracker(plot, value, num):
-#         viz.line(X = num, Y = value, win = plot, update = 'append')
+    def viz_tracker(plot, value, num):
+        viz.line(X = num, Y = value, win = plot, update = 'append')
     
-#     loss_plot = viz.line(Y= torch.tensor([[0,0]]).zero_(), opts = dict(title = 'Loss Tracker', 
-#                          legend = ['Training Loss', 'Validation Loss'],
-#                          xlabels = 'Epochs',
-#                          ylabels = 'Loss',
-#                          show_legend = True))
+    loss_plot = viz.line(Y= torch.tensor([[0,0]]).zero_(), opts = dict(title = 'Loss Tracker', 
+                         legend = ['Training Loss', 'Validation Loss'],
+                         xlabels = 'Epochs',
+                         ylabels = 'Loss',
+                         show_legend = True))
     
-#     acc_plot = viz.line(Y= torch.tensor([[0,0]]).zero_(), opts = dict(title = 'Accuracy Tracker', 
-#                          legend = ['Training Accuracy', 'Validation Accuracy'],
-#                          xlabels = 'Epochs',
-#                          ylabels = 'Accuracy',
-#                          show_legend = True))
+    acc_plot = viz.line(Y= torch.tensor([[0,0]]).zero_(), opts = dict(title = 'Accuracy Tracker', 
+                         legend = ['Training Accuracy', 'Validation Accuracy'],
+                         xlabels = 'Epochs',
+                         ylabels = 'Accuracy',
+                         show_legend = True))
     
-#     epoch_time_plot = viz.line(Y = torch.tensor([0]).zero_(), opts = dict(title = 'Epoch Time Tracker',
-#                                xlabels = 'Epochs',
-#                                ylabels = 'Time'))
+    epoch_time_plot = viz.line(Y = torch.tensor([0]).zero_(), opts = dict(title = 'Epoch Time Tracker',
+                               xlabels = 'Epochs',
+                               ylabels = 'Time'))
     
     
     
-#     epoch_time = []
-#     for e in range(epochs):        
-#         #####debugging#######
-#         train_plot = viz.line(Y = torch.tensor([0]).zero_(), opts = dict(title = 'Training Loss Tracker',
-#                                    xlabels = 'Iteration',
-#                                    ylabels = 'Time'))
+    epoch_time = []
+    for e in range(epochs):        
+        #####debugging#######
+        train_plot = viz.line(Y = torch.tensor([0]).zero_(), opts = dict(title = 'Training Loss Tracker',
+                                   xlabels = 'Iteration',
+                                   ylabels = 'Time'))
     
-#         #####################
-#         print('Epoch ', e)
-#         epoch_start = time.time()
-#         #Training
-#         res_net.train()
-#         iter_train_loss = []
-#         iter_train_acc1 = []
-#         iter_train_acc5 = []
+        #####################
+        print('Epoch ', e)
+        epoch_start = time.time()
+        #Training
+        res_net.train()
+        iter_train_loss = []
+        iter_train_acc1 = []
+        iter_train_acc5 = []
 
-#         for t, (x,y) in enumerate(train_loader):            
-#             x = x.to(device = device)
-#             y = y.to(device = device)
+        for t, (x,y) in enumerate(train_loader):            
+            x = x.to(device = device)
+            y = y.to(device = device)
             
-#             scores = res_net(x)
-#             loss = loss_fcn(scores, y)
-#             iter_train_loss.append(loss.item()) #to keep track of loss
+            scores = res_net(x)
+            loss = loss_fcn(scores, y)
+            iter_train_loss.append(loss.item()) #to keep track of loss
             
-#             optimizer.zero_grad()
-#             loss.backward()
-#             optimizer.step()    
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()    
                                     
-#             acc1, acc5 = accuracy(scores, y, topk=(1, 5))
+            acc1, acc5 = accuracy(scores, y, topk=(1, 5))
             
-#             iter_train_acc1.append(acc1.data.cpu().numpy()[0])
-#             iter_train_acc5.append(acc5.data.cpu().numpy()[0])
-#             viz_tracker(train_plot, torch.tensor([iter_train_loss[t]]), torch.tensor([t]))
+            iter_train_acc1.append(acc1.data.cpu().numpy()[0])
+            iter_train_acc5.append(acc5.data.cpu().numpy()[0])
+            viz_tracker(train_plot, torch.tensor([iter_train_loss[t]]), torch.tensor([t]))
             
-#             if (t % print_every) == 0:
-#                 print('Training: Iteration %d, loss = %.3f' % (t, loss.item()))    
-#                 print('Training: Got Top1: (%.2f), Top5: (%.2f)' % (acc1, acc5))
+            if (t % print_every) == 0:
+                print('Training: Iteration %d, loss = %.3f' % (t, loss.item()))    
+                print('Training: Got Top1: (%.2f), Top5: (%.2f)' % (acc1, acc5))
         
-#         train_loss.append(np.mean(iter_train_loss))
-#         train_acc1.append(np.mean(iter_train_acc1))
-#         train_acc5.append(np.mean(iter_train_acc5))
+        train_loss.append(np.mean(iter_train_loss))
+        train_acc1.append(np.mean(iter_train_acc1))
+        train_acc5.append(np.mean(iter_train_acc5))
         
-#         #Validation
-#         print('Checking accuracy on validation set')
-#         res_net.eval()
-#         with torch.no_grad():
-#             iter_valid_loss = []
-#             iter_valid_acc1 = []
-#             iter_valid_acc5 = []
-#             for t, (x, y) in enumerate(val_loader):               
-#                 x = x.to(device = device)
-#                 y = y.to(device = device)
+        #Validation
+        print('Checking accuracy on validation set')
+        res_net.eval()
+        with torch.no_grad():
+            iter_valid_loss = []
+            iter_valid_acc1 = []
+            iter_valid_acc5 = []
+            for t, (x, y) in enumerate(val_loader):               
+                x = x.to(device = device)
+                y = y.to(device = device)
                 
-#                 scores = res_net(x)                
-#                 loss = loss_fcn(scores, y)
-#                 iter_valid_loss.append(loss.item())
+                scores = res_net(x)                
+                loss = loss_fcn(scores, y)
+                iter_valid_loss.append(loss.item())
                 
-#                 acc1, acc5 = accuracy(scores, y, topk=(1,5))
+                acc1, acc5 = accuracy(scores, y, topk=(1,5))
                 
-#                 iter_valid_acc1.append(acc1.data.cpu().numpy()[0])
-#                 iter_valid_acc5.append(acc5.data.cpu().numpy()[0])
+                iter_valid_acc1.append(acc1.data.cpu().numpy()[0])
+                iter_valid_acc5.append(acc5.data.cpu().numpy()[0])
                 
-#             valid_loss.append(np.mean(iter_valid_loss))
-#             valid_acc1.append(np.mean(iter_valid_acc1))
-#             valid_acc5.append(np.mean(iter_valid_acc5))
-#             print('Validation: Top1: (%.2f), Top5: (%.2f)' % (acc1, acc5))
+            valid_loss.append(np.mean(iter_valid_loss))
+            valid_acc1.append(np.mean(iter_valid_acc1))
+            valid_acc5.append(np.mean(iter_valid_acc5))
+            print('Validation: Top1: (%.2f), Top5: (%.2f)' % (acc1, acc5))
     
-#         scheduler.step()
+        scheduler.step()
         
-#         #Epoch time
-#         epoch_end = time.time()
-#         epoch_time.append(epoch_end- epoch_start)
+        #Epoch time
+        epoch_end = time.time()
+        epoch_time.append(epoch_end- epoch_start)
         
-#         if e % 20 == 0:
-#             state = {
-#                 'epoch': e,
-#                 'state_dict': res_net.state_dict(),
-#                 'optimizer': optimizer.state_dict()
-#             }
+        if e % 20 == 0:
+            state = {
+                'epoch': e,
+                'state_dict': res_net.state_dict(),
+                'optimizer': optimizer.state_dict()
+            }
             
 #             torch.save(state, str(e)+'modelstateHB.pth')            
                        
-#             #state = torch.load(filepath)
+             #state = torch.load(filepath)
         
-#         #Update plots
-#         viz_tracker(epoch_time_plot, torch.tensor([epoch_time[e]]), torch.tensor([e]) )
-#         viz_tracker(loss_plot, torch.tensor([[train_loss[e], valid_loss[e]]]), torch.tensor([[e,e]]))
-#         viz_tracker(acc_plot, torch.tensor([[train_acc1[e], valid_acc1[e]]]), torch.tensor([[e,e]]))
-#         viz.close(win = train_plot)
+        #Update plots
+        viz_tracker(epoch_time_plot, torch.tensor([epoch_time[e]]), torch.tensor([e]) )
+        viz_tracker(loss_plot, torch.tensor([[train_loss[e], valid_loss[e]]]), torch.tensor([[e,e]]))
+        viz_tracker(acc_plot, torch.tensor([[train_acc1[e], valid_acc1[e]]]), torch.tensor([[e,e]]))
+        viz.close(win = train_plot)
         
-#         #Save resulting arrays so far every 10 or so epochs
-#         if((e+1) % 10 == 0):
-#             with open('train_loss.pkl', 'wb') as handle:
-#                 pickle.dump(train_loss, handle, protocol = pickle.HIGHEST_PROTOCOL)
-#             with open('valid_loss.pkl', 'wb') as handle:
-#                 pickle.dump(valid_loss, handle, protocol = pickle.HIGHEST_PROTOCOL)
-#             with open('train_acc1.pkl', 'wb') as handle:
-#                 pickle.dump(train_acc1, handle, protocol = pickle.HIGHEST_PROTOCOL)
-#             with open('train_acc5.pkl', 'wb') as handle:
-#                 pickle.dump(train_acc5, handle, protocol = pickle.HIGHEST_PROTOCOL)
-#             with open('valid_acc1.pkl', 'wb') as handle:
-#                 pickle.dump(valid_acc1, handle, protocol = pickle.HIGHEST_PROTOCOL)
-#             with open('valid_acc5.pkl', 'wb') as handle:
-#                 pickle.dump(valid_acc5, handle, protocol = pickle.HIGHEST_PROTOCOL)
-#             with open('epoch_time.pkl', 'wb') as handle:
-#                 pickle.dump(epoch_time, handle, protocol = pickle.HIGHEST_PROTOCOL)
+        #Save resulting arrays so far every 10 or so epochs
+        if((e+1) % 1 == 0): #CHANGE BACK TO 10
+            with open('pkl_files/train_loss.pkl', 'wb') as handle:
+                pickle.dump(train_loss, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            with open('pkl_files/valid_loss.pkl', 'wb') as handle:
+                pickle.dump(valid_loss, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            with open('pkl_files/train_acc1.pkl', 'wb') as handle:
+                pickle.dump(train_acc1, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            with open('pkl_files/train_acc5.pkl', 'wb') as handle:
+                pickle.dump(train_acc5, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            with open('pkl_files/valid_acc1.pkl', 'wb') as handle:
+                pickle.dump(valid_acc1, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            with open('pkl_files/valid_acc5.pkl', 'wb') as handle:
+                pickle.dump(valid_acc5, handle, protocol = pickle.HIGHEST_PROTOCOL)
+            with open('pkl_files/epoch_time.pkl', 'wb') as handle:
+                pickle.dump(epoch_time, handle, protocol = pickle.HIGHEST_PROTOCOL)
                 
-#     #calculate test loss 
-#     res_net.eval()
-#     for x, y in test_loader:
-#         x = x.to(device = device)
-#         y = y.to(device = device)
+    #calculate test loss 
+    res_net.eval()
+    for x, y in test_loader:
+        x = x.to(device = device)
+        y = y.to(device = device)
 
-#         scores = res_net(x)        
-#         loss = loss_fcn(scores, y)
+        scores = res_net(x)        
+        loss = loss_fcn(scores, y)
 
-#         acc1, acc5 = accuracy(scores, y, topk=(1,5))
+        acc1, acc5 = accuracy(scores, y, topk=(1,5))
     
-#     with open('test_scores.pkl', 'wb') as handle:
-#         pickle.dump(scores, handle, protocol = pickle.HIGHEST_PROTOCOL)    
+    with open('pkl_files/test_scores.pkl', 'wb') as handle:
+        pickle.dump(scores, handle, protocol = pickle.HIGHEST_PROTOCOL)    
     
-#     with open('test_acc.pkl', 'wb') as handle:
-#         pickle.dump( [acc1.data.cpu().numpy()[0], acc5.data.cpu().numpy()[0]] , handle, protocol = pickle.HIGHEST_PROTOCOL)
+    with open('pkl_files/test_acc.pkl', 'wb') as handle:
+        pickle.dump( [acc1.data.cpu().numpy()[0], acc5.data.cpu().numpy()[0]] , handle, protocol = pickle.HIGHEST_PROTOCOL)
     
 
 
