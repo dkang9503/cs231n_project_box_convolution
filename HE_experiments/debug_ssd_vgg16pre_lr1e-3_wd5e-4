@@ -1,4 +1,5 @@
-python3 ../ssd.pytorch/train.py\
+python3 -m pdb\
+	\../ssd.pytorch/train.py\
 	--dataset VOC\
 	--dataset_root ~/Project/Code/data/VOCdevkit/\
 	--save_folder ~/Project/Code/weights/\

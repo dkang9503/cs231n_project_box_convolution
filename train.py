@@ -226,9 +226,9 @@ def main():
                 'optimizer': optimizer.state_dict()
             }
             
-#             torch.save(state, str(e)+'modelstateHB.pth')            
+        torch.save(state, str(e)+'modelstateHB.pth')            
                        
-             #state = torch.load(filepath)
+        #state = torch.load(filepath)
         
         #Update plots
         viz_tracker(epoch_time_plot, torch.tensor([epoch_time[e]]), torch.tensor([e]) )
@@ -237,7 +237,7 @@ def main():
         viz.close(win = train_plot)
         
         #Save resulting arrays so far every 10 or so epochs
-        if((e+1) % 1 == 0): #CHANGE BACK TO 10
+        if((e+1) % 10 == 0):
             with open('pkl_files/train_loss.pkl', 'wb') as handle:
                 pickle.dump(train_loss, handle, protocol = pickle.HIGHEST_PROTOCOL)
             with open('pkl_files/valid_loss.pkl', 'wb') as handle:
