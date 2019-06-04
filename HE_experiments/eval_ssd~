@@ -1,4 +1,0 @@
-python3 eval.py\
-	--trained_model vgg16_reducedfc.pth\
-	--save_folder ~/Project/Code/weights/\
-	
