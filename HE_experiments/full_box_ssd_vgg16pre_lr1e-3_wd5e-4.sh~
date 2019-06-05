@@ -1,9 +1,11 @@
 python3 ../ssd.pytorch/train.py\
+	--arch full_box_ssd\
 	--dataset VOC\
 	--dataset_root ~/Project/Code/data/VOCdevkit/\
 	--save_folder ~/Project/Code/weights/\
 	--lr 1e-3\
 	--weight_decay 5e-4\
-	--visdom True\
-	--subset_size 1\
+	--batch_size 16\
+	--subset_size 0.1\
 	--basenet False\
+	--visdom True
