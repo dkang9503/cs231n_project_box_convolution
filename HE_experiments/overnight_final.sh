@@ -1,0 +1,56 @@
+python3 ../ssd.pytorch/train.py\
+	--arch full_box_ssd\
+	--dataset VOC\
+	--dataset_root ~/Project/Code/data/VOCdevkit/\
+	--save_folder ~/Project/Code/weights/\
+	--lr 1e-3\
+	--weight_decay 5e-4\
+	--subset_size 1\
+	--basenet False
+python3 ../ssd.pytorch/train.py\
+	--arch ssd\
+	--dataset VOC\
+	--dataset_root ~/Project/Code/data/VOCdevkit/\
+	--save_folder ~/Project/Code/weights/\
+	--lr 1e-3\
+	--weight_decay 8e-5\
+	--visdom True\
+	--subset_size 1\
+	--basenet False
+python3 ../ssd.pytorch/train.py\
+	--arch full_box_ssd\
+	--dataset VOC\
+	--dataset_root ~/Project/Code/data/VOCdevkit/\
+	--save_folder ~/Project/Code/weights/\
+	--lr 1e-3\
+	--weight_decay 8e-5\
+	--subset_size 1\
+	--basenet False\
+	--gamma 1
+python3 ../ssd.pytorch/train.py\
+	--arch full_box_ssd\
+	--dataset VOC\
+	--dataset_root ~/Project/Code/data/VOCdevkit/\
+	--save_folder ~/Project/Code/weights/\
+	--lr 1e-3\
+	--weight_decay 9e-4\
+	--subset_size 1
+python3 ../ssd.pytorch/train.py\
+	--arch full_box_ssd\
+	--dataset VOC\
+	--dataset_root ~/Project/Code/data/VOCdevkit/\
+	--save_folder ~/Project/Code/weights/\
+	--lr 1e-3\
+	--weight_decay 5e-3\
+	--subset_size 1\
+	--basenet False
+python3 ../ssd.pytorch/train.py\
+	--arch ssd\
+	--dataset VOC\
+	--dataset_root ~/Project/Code/data/VOCdevkit/\
+	--save_folder ~/Project/Code/weights/\
+	--lr 1e-3\
+	--weight_decay 5e-4\
+	--visdom True\
+	--subset_size 1\
+	--basenet False

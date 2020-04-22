@@ -5,7 +5,5 @@ python3 ../ssd.pytorch/train.py\
 	--save_folder ~/Project/Code/weights/\
 	--lr 1e-3\
 	--weight_decay 8e-4\
-	--batch_size 32\
 	--subset_size 1\
 	--basenet False\
-	--visdom True
