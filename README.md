@@ -40,7 +40,11 @@ help(BoxConv2d)
 `ssd/box_ssd.py`
 
 
+In order to run the (box)resnet models, just run the command `python box_res_train.py` or `python res_net_train.py`. Argparse is not used, so the parameters have to be adjusted manually within the file. 
 
+For each run, the pickle file of the losses and accuracies will be saved in the same folder.
+
+Use the command `visdom` in order to see the training process.
 
 
 
