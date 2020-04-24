@@ -34,22 +34,47 @@ box_conv = BoxConv2d(16, 8, 240, 320)
 help(BoxConv2d)
 ```
 
+## Running the models
 
+### Classification and Segmentation
 
+In order to train the resnet models, run the command:
 
-`ssd/box_ssd.py`
+```
+python scripts/box_res_train.py
+```
 
+To train the box resnet models with, run:
 
-In order to run the (box)resnet models, just run the command `python box_res_train.py` or `python res_net_train.py`. Argparse is not used, so the parameters have to be adjusted manually within the file. 
+```
+python scripts/res_net_train.py
+```
 
-For each run, the pickle file of the losses and accuracies will be saved in the same folder.
+Argparse is not used, so the parameters have to be adjusted manually within the file.
+
+For each run, the `.pkl` file of the losses and accuracies will be saved in the same folder.
 
 Use the command `visdom` in order to see the training process.
 
+### Object Detection
+
+The files for object detection can be found in ssd/ and were
+adapted from [this repo](https://github.com/amdegroot/ssd.pytorch).
+
+`ssd/ssd.py` contains the regular SSD model, `box_ssd2.py` is
+SSD with some of the traditional convolutional layers replaced
+by `BoxConv2d`, and `ssd_full_box.py` is SSD where all tradtional convolutional layers which can be are replaced.
+
+Run
+
+```
+# Example
+python ssd/train.py --arch full_box_ssd
+```
 
 
-
-### Data
+## Data
 
 - Tiny ImageNet: https://tiny-imagenet.herokuapp.com/
 - Pascal VOC 2012: http://host.robots.ox.ac.uk/pascal/VOC/voc2012/
+

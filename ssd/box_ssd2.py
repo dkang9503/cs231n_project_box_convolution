@@ -1,3 +1,16 @@
+'''
+Adapted from https://github.com/amdegroot/ssd.pytorch/ssd.py by Harry Emeric
+CS231N Final Project: Exploring Box Convolutional Layers
+
+File: box_ssd.py
+
+------------------------------------------------------------------------
+
+This file contains the model architecture for ssd with a single extra layer
+replaced by a box convolutional layer.
+
+'''
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -10,7 +23,8 @@ from box_convolution import BoxConv2d
 
 
 class BoxSSD2(nn.Module):
-    """Single Shot Multibox Architecture
+    """Single Shot Multibox Architecture adapted to have box convolutional layers
+    
     The network is composed of a base VGG network followed by the
     added multibox conv layers.  Each multibox layer branches into
         1) conv2d for class conf scores
